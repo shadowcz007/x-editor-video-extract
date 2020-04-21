@@ -65,13 +65,13 @@ class VideoExtract {
         this.wrapper.block = document.createElement('div');
         this.wrapper.block.setAttribute("data-title", "视频拆解");
         this.wrapper.block.classList.add(this.CSS.wrapperBlock);
-        if (this.data && this.data.frames) {
+        if (this.data && this.data.frames && this.data.frames.length > 0) {
             let createGIF = this._createGIFBtn();
             //存储视频帧的
             let videoFrames = this._createFrames();
             this.wrapper.block.appendChild(createGIF);
             this.wrapper.block.appendChild(videoFrames);
-            return this.wrapper;
+            return this.wrapper.block;
         };
 
         const input = document.createElement('input');
@@ -346,15 +346,20 @@ class VideoExtract {
     _createFrames() {
         let videoFrames = document.createElement("div");
         videoFrames.classList.add(this.CSS.frames);
-        if (this.data && this.data.frames) {
+        if (this.data && this.data.frames && this.data.frames.length > 0) {
+
+            let sortByIndex = (a, b) => {
+                return a.index - b.index
+            };
+            this.data.frames = this.data.frames.sort(sortByIndex);
 
             Array.from(this.data.frames, f => {
                 let frame = this._createFrame(f);
                 videoFrames.appendChild(frame);
             });
-        }
+        };
         return videoFrames
-    }
+    };
 
     _screenshotForVideo(video) {
         let canvas = document.createElement("canvas");
