@@ -324,21 +324,18 @@ class VideoExtract {
     _createFrame(frame) {
         let frameImg = document.createElement("div");
         frameImg.classList.add("frame");
+
         frameImg.setAttribute("frame-id", frame.id);
         frameImg.setAttribute("data-index", frame.index);
         let imgurl = URL.createObjectURL(this._dataURLtoBlob(frame.url));
         frameImg.innerHTML = `
-      <img data-src="${imgurl}" data-width="${frame.width}" data-height="${frame.height}" alt="${frame.currentTime}" uk-img>
+      <img src="${imgurl}" width="${frame.width}" height="${frame.height}" alt="${frame.currentTime}">
       `;
-
         frameImg.addEventListener("click", (e) => {
             e.preventDefault();
-            // console.log(e);
-            this.data.frames = this.data.frames.filter(frame => frame.id != id);
+            this.data.frames = this.data.frames.filter(f => f.id != frame.id);
             frameImg.remove();
-            // screenshotFrames.querySelector(".uk-badge").innerText = this.data.frames.length;
         });
-
         return frameImg;
     }
 
