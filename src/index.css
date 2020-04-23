@@ -33,6 +33,7 @@
     max-width: 320px!important;
     width: 90%!important;
     /* height: 100%; */
+    max-height: 280px;
 }
 
 .video-extract .video .controls {
