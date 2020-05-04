@@ -3,6 +3,7 @@
  */
 require('./index.css').toString();
 
+const RecordRTC = require('recordrtc/RecordRTC');
 // const mobilenet = require('@tensorflow-models/mobilenet');
 const smartcrop = require("smartcrop");
 
@@ -36,19 +37,29 @@ class VideoExtract {
         this.CSS = {
             baseClass: this.api.styles.block,
             loading: this.api.styles.loader,
-            input: this.api.styles.input + " video-extract-info__caption",
+            input: this.api.styles.input,
             button: this.api.styles.button,
             settingsButton: this.api.styles.settingsButton,
             settingsButtonActive: this.api.styles.settingsButtonActive,
 
             wrapperBlock: "video-extract",
-            addButton: "add",
             actions: "video-extract-actions",
             frames: "video-frames",
+            range: "video-range",
+            unSelected: "un-selected",
             screenshotBtn: "screenshot-btn"
         };
 
+        //视频
+        this.video = null;
+        //帧率
+        this.frameRate = 1;
+        //抽取的帧
+        this.videoFrames = null;
 
+        //
+        this.startIndex = 0;
+        this.endIndex = 0;
 
         // console.log(mobilenet);
         // this.model = mobilenet.load({
@@ -66,7 +77,9 @@ class VideoExtract {
         this.wrapper.block.setAttribute("data-title", "视频拆解");
         this.wrapper.block.classList.add(this.CSS.wrapperBlock);
         if (this.data && this.data.frames && this.data.frames.length > 0) {
+            //创建gif按钮
             let createGIF = this._createGIFBtn();
+
             //存储视频帧的
             let videoFrames = this._createFrames();
             this.wrapper.block.appendChild(createGIF);
@@ -76,9 +89,9 @@ class VideoExtract {
 
         const input = document.createElement('input');
 
-        const button = document.createElement("div");
-        button.classList.add(this.CSS.addButton);
-        button.innerHTML = `<a class="uk-icon-button" uk-icon="plus" data-tip="从本地添加"></a>`;
+        const button = document.createElement("button");
+        button.classList.add(this.CSS.button);
+        button.innerHTML = `从本地添加`;
 
         button.addEventListener("click", (e) => {
             e.preventDefault();
@@ -94,10 +107,11 @@ class VideoExtract {
             if (e.target.files.length == 1 && !this.wrapper.block.querySelector("video")) {
                 let file = e.target.files[0];
                 if (file.type.match(/video\//)) {
+                    console.log(file)
                     let url = URL.createObjectURL(file);
 
                     this._createVideo(url);
-
+                    this.wrapper.block.classList.toggle(this.CSS.loading);
                 };
             }
         });
@@ -177,10 +191,10 @@ class VideoExtract {
         // playpause.innerText = "播放";
         // playpause.classList.add(this.CSS.button);
 
-        let screenshot = document.createElement("button");
-        screenshot.innerHTML = `截屏`;
-        screenshot.classList.add(this.CSS.button);
-        screenshot.classList.add(this.CSS.screenshotBtn);
+        // let screenshot = document.createElement("button");
+        // screenshot.innerHTML = `截屏`;
+        // screenshot.classList.add(this.CSS.button);
+        // screenshot.classList.add(this.CSS.screenshotBtn);
 
         let createGIF = this._createGIFBtn();
 
@@ -197,13 +211,15 @@ class VideoExtract {
         const video = document.createElement("video");
         video.src = url;
         video.setAttribute("preload", "metadata");
-        video.controls = true;
+        video.controls = false;
+        video.muted = false;
+        video.οncοntextmenu = function() {
+            return false;
+        }
 
         video.addEventListener("loadedmetadata", (e) => {
-            // console.log(e);
+            // console.log('loadedmetadata');
             if (!video.getAttribute("width")) {
-
-                this.wrapper.block.classList.toggle(this.CSS.loading);
 
                 video.setAttribute("width", e.target.videoWidth);
                 video.setAttribute("height", e.target.videoHeight);
@@ -221,43 +237,168 @@ class VideoExtract {
                     frames: []
                 };
 
-                videoInfo.classList.add("video-extract-info");
-                videoInfo.innerHTML = `
-              <h5 contentEditable='true' class="${this.CSS.input}" data-placeholder="输入视频描述"></h5>
-              <ul class="uk-comment-meta uk-subnav uk-subnav-divider ">
-                  <li>画面长 ${e.target.videoWidth} px</li>
-                  <li>画面高 ${e.target.videoHeight} px</li>
-              </ul>
-              <ul class="uk-comment-meta uk-subnav uk-subnav-divider ">
-                  <li>宽高比 ${ratio.num}</li>
-                  <li>${ratio.desc}</li>
-              </ul>
-              <ul class="uk-comment-meta uk-subnav uk-subnav-divider ">
-                  <li>时长 ${time.num} 秒</li>
-                  <li>${time.desc}</li>
-              </ul>
-              <ul class="uk-comment-meta uk-subnav uk-subnav-divider ">
-                  <li class="current-time">当前位于 0 秒</li>
-                  <li> - </li>
-              </ul>
-          `;
-
+                //         videoInfo.classList.add("video-extract-info");
+                //         videoInfo.innerHTML = `
+                //       <h5 contentEditable='true' class="${this.CSS.input}" data-placeholder="输入视频描述"></h5>
+                //       <ul class="uk-comment-meta uk-subnav uk-subnav-divider ">
+                //           <li>画面长 ${e.target.videoWidth} px</li>
+                //           <li>画面高 ${e.target.videoHeight} px</li>
+                //       </ul>
+                //       <ul class="uk-comment-meta uk-subnav uk-subnav-divider ">
+                //           <li>宽高比 ${ratio.num}</li>
+                //           <li>${ratio.desc}</li>
+                //       </ul>
+                //       <ul class="uk-comment-meta uk-subnav uk-subnav-divider ">
+                //           <li>时长 ${time.num} 秒</li>
+                //           <li>${time.desc}</li>
+                //       </ul>
+                //       <ul class="uk-comment-meta uk-subnav uk-subnav-divider ">
+                //           <li class="current-time">当前位于 0 秒</li>
+                //           <li> - </li>
+                //       </ul>
+                //   `;
+                video.currentTime = 0.1;
+                this._extractFrames();
             };
 
         });
 
-        video.addEventListener('timeupdate', function() {
-            videoInfo.querySelector(".current-time").innerText = "当前位于 " + video.currentTime.toFixed(1) + " 秒";
-        });
+        // video.addEventListener("onloadeddata", () => {
+        //     this._extractFrames();
+        // });
+        // video.addEventListener('timeupdate', function() {
+        //     console.log('timeupdate');
+        //     //videoInfo.querySelector(".current-time").innerText = "当前位于 " + video.currentTime.toFixed(1) + " 秒";
+        // });
 
 
-        this.api.listeners.on(screenshot, 'click', (e) => {
+        // this.api.listeners.on(screenshot, 'click', (e) => {
+        //     e.preventDefault();
+        //     if (screenshot.getAttribute("clicked") == "1") {
+        //         return;
+        //     };
+        //     screenshot.setAttribute("clicked", "1");
+
+        //     this._extractFrames();
+
+        //     //如果 output有指定
+        //     // if (this.config.output != null) {
+
+        //     //     // this.api.blocks.delete(this.index);
+        //     //     this.api.blocks.insert(this.config.output, {
+        //     //         url: base64,
+        //     //         quote: true,
+        //     //         caption: this._getTime(currentTime).num
+
+        //     //     });
+        //     //     screenshot.setAttribute("data-count", this.data.frames.length);
+
+        //     // };
+
+        //     setTimeout(() => {
+        //         screenshot.setAttribute("clicked", "0");
+        //     }, 200);
+
+        // });
+
+        //videoRightPan.appendChild(videoInfo);
+        // actions.appendChild(playpause);
+        //actions.appendChild(screenshot);
+        //范围开始-结束
+        let startRange = document.createElement("input"),
+            endRange = document.createElement("input");
+        startRange.classList.add(this.CSS.input);
+        startRange.classList.add(this.CSS.range);
+        endRange.classList.add(this.CSS.input);
+        endRange.classList.add(this.CSS.range);
+        startRange.setAttribute("type", "number");
+        startRange.setAttribute("min", "1");
+        endRange.setAttribute("type", "number");
+        endRange.setAttribute("min", "2");
+        this.updateEndRange = (maxNum) => {
+            endRange.setAttribute("max", maxNum);
+            endRange.value = maxNum;
+            startRange.value = 0;
+            startRange.setAttribute("max", maxNum - 1);
+            this.endIndex = maxNum - 1;
+        };
+        let startSpan = document.createElement("span");
+        startSpan.innerText = "开始";
+        startSpan.style.width = "136px";
+        let endSpan = document.createElement("span");
+        endSpan.innerText = "结束";
+        endSpan.style.width = "136px";
+
+        startRange.addEventListener("change", (e) => {
             e.preventDefault();
-            if (screenshot.getAttribute("clicked") == "1") {
-                return;
-            };
-            screenshot.setAttribute("clicked", "1");
+            this.startIndex = (~~startRange.value) - 1;
+            this._selectedFrames();
+        });
+        endRange.addEventListener("change", (e) => {
+            e.preventDefault();
+            this.endIndex = (~~endRange.value) - 1;
+            this._selectedFrames();
+        });
 
+
+        actions.appendChild(startSpan);
+        actions.appendChild(startRange);
+        actions.appendChild(endSpan);
+        actions.appendChild(endRange);
+
+        actions.appendChild(createGIF);
+
+
+        // videoRightPan.appendChild(actions);
+
+        //videoDiv.appendChild(video);
+        // videoDiv.appendChild(controls);
+        videoContainer.appendChild(video);
+        //videoContainer.appendChild(videoRightPan);
+
+        this.video = video;
+        this.videoFrames = videoFrames;
+
+        this.wrapper.block.innerHTML = "";
+        this.wrapper.block.appendChild(videoContainer);
+        this.wrapper.block.appendChild(actions);
+        this.wrapper.block.appendChild(videoFrames);
+
+        //分离音频
+        //setTimeout(() => { this._extractAudio(); }, 1000)
+    };
+
+
+    _selectedFrames() {
+        let startIndex = this.startIndex,
+            endIndex = this.endIndex;
+        for (let i = 0; i < startIndex; i++) {
+            let frame = this.data.frames[i];
+            if (!(this.CSS.unSelected in frame.element.classList)) {
+                frame.element.classList.add(this.CSS.unSelected);
+            };
+            this.data.frames[i].selected = false;
+        };
+
+        for (let i = startIndex; i < endIndex + 1; i++) {
+            let frame = this.data.frames[i];
+            frame.element.classList.remove(this.CSS.unSelected);
+            this.data.frames[i].selected = true;
+        };
+
+        for (let i = endIndex + 1; i < this.data.frames.length; i++) {
+            let frame = this.data.frames[i];
+            if (!(this.CSS.unSelected in frame.element.classList)) {
+                frame.element.classList.add(this.CSS.unSelected);
+            };
+            this.data.frames[i].selected = false;
+        };
+
+    }
+
+    _extractFrames() {
+        let video = this.video;
+        if (!this.video.seeking) {
             let base64 = this._screenshotForVideo(video);
             let currentTime = video.currentTime;
             let id = this.data.frames.length + "_" + (new Date()).getTime();
@@ -272,53 +413,56 @@ class VideoExtract {
                 currentTime: currentTime,
                 id: id,
                 width: video.videoWidth,
-                height: video.videoHeight
+                height: video.videoHeight,
+                selected: true
             };
 
-            this.data.frames.push(frame);
+            video.currentTime += 1 / this.frameRate;
 
-            //如果 output有指定
-            // if (this.config.output != null) {
 
-            //     // this.api.blocks.delete(this.index);
-            //     this.api.blocks.insert(this.config.output, {
-            //         url: base64,
-            //         quote: true,
-            //         caption: this._getTime(currentTime).num
-
-            //     });
-            //     screenshot.setAttribute("data-count", this.data.frames.length);
-
-            // };
+            //console.log(this.data.frames.length)
 
             let frameImg = this._createFrame(frame);
-            videoFrames.appendChild(frameImg);
+            frame.element = frameImg;
 
-            setTimeout(() => {
-                screenshot.setAttribute("clicked", "0");
-            }, 200);
+            this.videoFrames.appendChild(frameImg);
 
+            this.data.frames.push(frame);
+        }
+
+        //console.log(this.video.seeking)
+        window.requestAnimationFrame(() => {
+            if (this.video.currentTime < this.data.time.num - 0.1) {
+                this._extractFrames();
+            } else {
+                this.updateEndRange(this.data.frames.length);
+                // this.wrapper.block.classList.toggle(this.CSS.loading);
+            }
+        })
+
+    }
+
+    _extractAudio() {
+        var audioStream = new MediaStream();
+        let videoStream = this.video.captureStream();
+
+        let audio = document.createElement("audio");
+        audio.controls = true;
+        this.recorder = RecordRTC(audioStream, {
+            type: 'audio',
+            mimeType: 'audio/webm',
+            previewStream: (s) => {
+                audio.src = s;
+            }
         });
-
-        videoRightPan.appendChild(videoInfo);
-        // actions.appendChild(playpause);
-        actions.appendChild(screenshot);
-        actions.appendChild(createGIF);
-        actions.appendChild(videoFrames);
-
-        // videoRightPan.appendChild(actions);
-
-        videoDiv.appendChild(video);
-        // videoDiv.appendChild(controls);
-        videoContainer.appendChild(videoDiv);
-        videoContainer.appendChild(videoRightPan);
-
-
-        this.wrapper.block.innerHTML = "";
-        this.wrapper.block.appendChild(videoContainer);
-        this.wrapper.block.appendChild(actions);
-
-    };
+        // "getTracks" is RecordRTC's built-in function
+        RecordRTC.getTracks(videoStream, 'audio').forEach(function(audioTrack) {
+            audioStream.addTrack(audioTrack);
+        });
+        audio.srcObject = audioStream;
+        console.log(this.video, videoStream)
+        this.wrapper.block.appendChild(audio)
+    }
 
 
     _createFrame(frame) {
@@ -333,8 +477,15 @@ class VideoExtract {
       `;
         frameImg.addEventListener("click", (e) => {
             e.preventDefault();
-            this.data.frames = this.data.frames.filter(f => f.id != frame.id);
-            frameImg.remove();
+            if (frame.index > this.endIndex - 2) {
+                this.endIndex = frame.index - 1;
+            } else {
+                this.startIndex = frame.index;
+            }
+
+            this._selectedFrames();
+            // this.data.frames = this.data.frames.filter(f => f.id != frame.id);
+            // frameImg.remove();
         });
         return frameImg;
     }

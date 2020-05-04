@@ -32,6 +32,10 @@
     "smartcrop": "^2.0.3",
     "style-loader": "^0.21.0",
     "webpack": "^4.29.5",
-    "webpack-cli": "^3.2.3"
+    "webpack-cli": "^3.3.11"
+  },
+  "dependencies": {
+    "recordrtc": "^5.5.9",
+    "video.js": "^7.7.5"
   }
 }

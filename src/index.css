@@ -20,11 +20,10 @@
     justify-content: space-around;
 }
 
-.video-extract .video {
-    padding: 20px 0;
-    display: flex;
-    justify-content: space-between;
-    flex-direction: column;
+.video-extract video {
+    width: 100%;
+    max-height: 600px;
+    display: none;
 }
 
 .video-extract .video video {
@@ -52,24 +51,6 @@
     outline: none;
     min-width: 98px;
     margin: 32px;
-}
-
-.video-extract .add {
-    display: flex;
-    width: 200px;
-    background: #eeeeee;
-    /* height: 88px; */
-    margin: 8px;
-    border-radius: 4px;
-    padding: 28px;
-    /* justify-content: center; */
-    /* align-items: center; */
-    cursor: pointer;
-}
-
-.video-extract .add:hover {
-    background-color: rgb(227, 227, 227);
-    color: white;
 }
 
 .video-extract .uk-icon-button {
@@ -120,10 +101,18 @@
     height: 100%;
 }
 
+.video-extract .un-selected {
+    filter: contrast(0.4);
+}
+
 .video-extract-actions {
     display: flex;
     justify-content: space-around;
-    align-items: flex-start;
+    align-items: center;
+}
+
+.video-extract-actions .video-range {
+    display: flex;
 }
 
 .video-extract-info {
